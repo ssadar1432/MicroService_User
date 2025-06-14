@@ -18,6 +18,8 @@ public interface UserServie {
 
     User getUser(int userId);
 
+    User getUserByFeignClient(int userId);
+
     String deleteUser(int userId);
 
     User updateUser(User user);

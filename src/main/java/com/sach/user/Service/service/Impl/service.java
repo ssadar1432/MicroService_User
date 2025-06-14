@@ -1,5 +1,7 @@
 package com.sach.user.Service.service.Impl;
 
+import com.sach.user.Service.FeignClient.HotelService;
+import com.sach.user.Service.FeignClient.RatingService;
 import com.sach.user.Service.enties.Hotel;
 import com.sach.user.Service.enties.Rating;
 import com.sach.user.Service.enties.User;
@@ -26,6 +28,12 @@ public class service implements UserServie {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private HotelService hotelService; //FiegnClient Calling
+
+    @Autowired
+    private RatingService ratingService;  //FiegnClient Calling
+
     @Override
     public User SaveUser(User user) {
 
@@ -44,19 +52,43 @@ public class service implements UserServie {
 
         //http://localhost:8083/rating/users/1
 
-       Rating[] userRatingEntries =restTemplate.getForObject("http://localhost:8083/rating/users/"+user.getUserId(), Rating[].class);
+       Rating[] userRatingEntries =restTemplate.getForObject("http://RATINGSERVICE/rating/users/"+user.getUserId(), Rating[].class);
 
        List<Rating>  userRating= Arrays.stream(userRatingEntries).toList();
               List<Rating> ratingList=userRating.stream().map(rating ->
                  {
-                     //http://localhost:8082/hotel/2
-                     ResponseEntity<Hotel> htlEntry = restTemplate.getForEntity("http://localhost:8082/hotel/"+rating.getHotelId(), Hotel.class);
-             Hotel htl =htlEntry.getBody();
-              rating.setHotel(htl);
+                     //http://localhost:8082/hotel/2 // RestTemplate Call
+                  ResponseEntity<Hotel> htlEntry = restTemplate.getForEntity("http://HOTELSERVICE/hotel/"+rating.getHotelId(), Hotel.class);
+                   Hotel htl =htlEntry.getBody();
+                     rating.setHotel(htl);
+
                 return rating;
                  }
 
                  ).collect(Collectors.toList());
+
+        user.setRating(ratingList);
+        return user;
+    }
+
+    //FiegnClient Calling
+    @Override
+    public User getUserByFeignClient(int userId) {
+
+        User user= userRepo.findById(userId).orElseThrow(()->new ResourseNotFoundException("Resource With Given Id Is not available"+userId));
+        //FiegnClient Calling
+        ResponseEntity<List<Rating>>  userRating=ratingService.getRatingByUserID(user.getUserId());
+        List<Rating> rate=userRating.getBody();
+        List<Rating> ratingList=rate.stream().map(rating ->
+                {
+                    //FiegnClient Calling HotelService
+                    ResponseEntity<Hotel> htl2 =hotelService.getHotelById(rating.getHotelId());
+                    rating.setHotel(htl2.getBody());
+
+                    return rating;
+                }
+
+        ).collect(Collectors.toList());
 
         user.setRating(ratingList);
         return user;

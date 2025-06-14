@@ -38,6 +38,12 @@ public class UserController {
         return ResponseEntity.ok(user);
 
     }
+    @GetMapping("/feign/{Id}")
+    public ResponseEntity<User> getUser(@PathVariable int Id){
+        User user=userServie.getUserByFeignClient(Id);
+        return ResponseEntity.ok(user);
+
+    }
 
     // Get Delete User By ID
     @DeleteMapping("/delete/{uesrId}")

@@ -2,6 +2,8 @@ server:
   port: 8081
 
 spring:
+  application:
+      name: USER-SERVICE
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
@@ -11,13 +13,46 @@ spring:
     hibernate:
       ddl-auto: update
       show-sql: true
+  profiles:
+     active: prod
 
+  config:
+    config:
+        import: optional:configserver:http://localhost:8092/.
+#eureka:
+#  instance:
+#    prefer-ip-address: true
+#  client:
+ #   register-with-eureka: true
+ #   fetch-registry: true
+ #   serviceUrl:
+  #    defaultZone: http://localhost:8761/eureka/
 
-eureka:
-  instance:
-    prefer-ip-address: true
-  client:
-    register-with-eureka: true
-    fetch-registry: true
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka/
+# Resillence4J config
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health" # Expose only the 'health' endpoint. Use "*" to expose all.
+    enabled-by-default: true # Actuator endpoints are enabled by default
+  endpoint:
+    health:
+      show-details: "always" # Show full details of health indicators. Options: "always", "when_authorized", "never"
+      show-components: "always" # Show individual component health details. Options: "always", "when_authorized", "never"
+      enabled: true # Ensure the health endpoint is enabled
+
+#circuit Breaker
+  resilience4j:
+       circuitbreaker:
+              instances:
+                Hotel_Rating_Breaker:
+                                  registerHealthIndicator: true
+                                  eventConsumerBufferSize: 10
+                                  failureRateThreshold: 50
+                                  minimum-number-of-calls: 5
+                                  automatic-transition-from-open-to-half-open-enabled: true
+                                  wait-duration-in-open-state: 5s
+                                  permitted-number-of-calls-in-half-open-state: 3
+                                  sliding-window-size: 10
+                                  sliding-window-type: count_based

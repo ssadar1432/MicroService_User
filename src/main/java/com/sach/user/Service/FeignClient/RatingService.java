@@ -14,4 +14,7 @@ public interface RatingService {
 
     @GetMapping("/rating/users/{userId}")
     public ResponseEntity<List<Rating>> getRatingByUserID(@PathVariable int userId);
+
+    @GetMapping("/rating/getAllRating")
+    public ResponseEntity<List<Rating>> getAllRating();
 }

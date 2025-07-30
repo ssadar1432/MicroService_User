@@ -1,13 +1,17 @@
 package com.sach.user.Service.controller;
 
+import com.sach.user.Service.FeignClient.RatingService;
+import com.sach.user.Service.enties.Rating;
 import com.sach.user.Service.enties.User;
 import com.sach.user.Service.service.UserServie;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Calendar;
 import java.util.List;
 
 @RestController
@@ -16,6 +20,9 @@ public class UserController {
 
     @Autowired
     UserServie userServie;
+
+    @Autowired
+    RatingService ratingService;
 
     //Create
     @PostMapping
@@ -54,12 +61,30 @@ public class UserController {
               return new ResponseEntity<>(user,HttpStatus.OK);
 
     }
+    int retry=1;
     @GetMapping("/feign/{Id}")
+    @Retry(name="RetryHotelRating", fallbackMethod = "RatingHotelFallBack")
     public ResponseEntity<User> getUser(@PathVariable int Id){
+        System.out.println("Retry count "+retry);
+        retry++;
+
         User user=userServie.getUserByFeignClient(Id);
         return ResponseEntity.ok(user);
 
     }
+    // Call Feign Client Direct from controller to Other service
+    int retryCount=1;
+    @GetMapping("/Allfeign/{Id}")
+    @Retry(name="RetryHotelRating", fallbackMethod = "RatingHotelFallBack")
+    public ResponseEntity<List<Rating>> getFiegnAllUser(@PathVariable int Id) {
+        System.out.println("Retry count " + retry);
+        retryCount++;
+        System.out.println("Rating List " + Calendar.getInstance());
+        List<Rating> userList = (List<Rating>) ratingService.getAllRating();
+        System.out.println("Rating List " + userList);
+        return ResponseEntity.ok(userList);
+    }
+
 
     // Get Delete User By ID
     @DeleteMapping("/delete/{uesrId}")
